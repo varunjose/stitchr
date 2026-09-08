@@ -77,4 +77,8 @@ Check JavaScript syntax with `node --check dist/app.js`. The delivered site was 
 
 ## Assets
 
-The kitchen image was generated for this project. Tool tiles use simple illustrative text marks and names, not official endorsement badges. Third-party product names belong to their respective owners.
+The kitchen image was generated for this project. Tool tiles use original SVG logos from the official Supabase, Stripe, Slack, and Shopify brand assets. Sources are recorded in `dist/assets/SOURCES.md`. Third-party product names belong to their respective owners.
+
+## Mobile and motion refinements
+
+The mobile dashboard uses readable order cards, a two-column metric layout, and full-width demo controls. The hero introduces the needle before drawing the thread. Section reveals and slow ambient lime lighting reuse the existing theme. Reduced-motion preferences and the animation control disable decorative movement. All brand SVGs are self-hosted.

@@ -16,13 +16,13 @@
       brand: 'Bloom Kitchen', initial: 'b.', mark: '', caption: 'Good food. A smoother operation.',
       receiptLabel: 'ORDER #1049', receiptTitle: 'Lunch rush, handled.', receiptCopy: 'Paid → Preparing → Ready for pickup',
       title: 'From “Order up!”\nto all caught up.',
-      description: 'A customer orders lunch online. Payment is confirmed, a ticket reaches the kitchen, and a pickup update goes out. Your team stays focused on the food.',
+      description: 'An order comes in. Payment clears. The kitchen gets a ticket and the customer gets an update.',
       benefits: [
         ['One simple ordering experience', 'A menu, checkout, and order status in one app.'],
         ['A calmer kitchen', 'Paid orders go straight to your team’s queue.'],
         ['The whole picture', 'See sales, active orders, and customer questions.']
       ],
-      cta: 'Explore the kitchen dashboard', greeting: 'Let’s make it a good one.', records: 'Orders',
+      cta: 'Try the kitchen dashboard', greeting: 'Let’s make it a good one.', records: 'Orders',
       metric: 'Orders today', note: '12 ready for pickup', total: 48, revenue: 1284, questions: 24,
       recordTitle: 'Latest orders', recordColumn: 'Order', runLabel: 'Run a sample order',
       sampleNoun: 'order', recordPrefix: '#', nextId: 1049, amount: 28, finalStatus: 'Preparing',
@@ -36,13 +36,13 @@
       brand: 'Form & Field', initial: 'f.', mark: 'form.', caption: 'Small finds. A connected storefront.',
       receiptLabel: 'ORDER #2051', receiptTitle: 'From cart to customer.', receiptCopy: 'Checkout → Inventory → Fulfillment',
       title: 'More orders.\nFewer moving parts.',
-      description: 'A customer finds the perfect piece. Checkout confirms the payment, inventory is updated, and fulfillment gets the details. Your storefront and your team stay in step.',
+      description: 'A purchase updates payments, inventory, and fulfillment. Your storefront and team stay in step.',
       benefits: [
         ['A smooth path to checkout', 'Products, payment, and order updates in one place.'],
         ['A connected back office', 'New purchases become clear fulfillment tasks.'],
         ['A view beyond the sale', 'Follow revenue, customer activity, and open orders.']
       ],
-      cta: 'Explore the store dashboard', greeting: 'Your store, in good shape.', records: 'Orders',
+      cta: 'Try the store dashboard', greeting: 'Your store, in good shape.', records: 'Orders',
       metric: 'Orders today', note: '8 ready to fulfill', total: 32, revenue: 2460, questions: 18,
       recordTitle: 'Latest purchases', recordColumn: 'Order', runLabel: 'Run a sample purchase',
       sampleNoun: 'purchase', recordPrefix: '#', nextId: 2051, amount: 64, finalStatus: 'Packing',
@@ -56,13 +56,13 @@
       brand: 'Studio North', initial: 'n.', mark: 'north.', caption: 'Great client work. Less admin.',
       receiptLabel: 'BOOKING #3063', receiptTitle: 'A great first impression.', receiptCopy: 'Booking → Deposit → Welcome',
       title: 'From first booking\nto a better client experience.',
-      description: 'A new client books a consultation. Their deposit is recorded, a client record is created, and your team receives the brief. Everyone starts with the context they need.',
+      description: 'A booking records the deposit, creates a client profile, and sends your team the brief.',
       benefits: [
         ['An easier welcome', 'Let clients book, pay, and find their next steps.'],
         ['Fewer follow-up chores', 'Turn a booking into a ready-to-use client record.'],
         ['A clear workload', 'See bookings, payments, and client questions together.']
       ],
-      cta: 'Explore the service dashboard', greeting: 'Make room for your best work.', records: 'Bookings',
+      cta: 'Try the service dashboard', greeting: 'Make room for your best work.', records: 'Bookings',
       metric: 'Bookings today', note: '4 upcoming consultations', total: 12, revenue: 1800, questions: 9,
       recordTitle: 'Latest bookings', recordColumn: 'Booking', runLabel: 'Run a sample booking',
       sampleNoun: 'booking', recordPrefix: '#', nextId: 3063, amount: 150, finalStatus: 'Confirmed',
@@ -114,6 +114,7 @@
     const waiting = ['Preparing', 'Packing', 'Upcoming', 'Processing'].includes(status);
     statusCell.append(create('span', `table-status ${waiting ? 'preparing' : 'ready'}`, status));
     row.append(statusCell, create('td', '', `$${amount.toFixed(2)}`));
+    [...row.children].forEach((cell, index) => cell.dataset.label = ['Reference', 'Customer', 'Status', 'Amount'][index]);
     return row;
   };
 
@@ -151,7 +152,7 @@
     ]);
     $('#records-body').replaceChildren(...[...newRows, ...data.rows].slice(0, 3).map(row => buildRow(row)));
     renderSteps(data);
-    text('#demo-status', `Try a sample ${data.sampleNoun} to see the whole workflow, from payment to notification.`);
+    text('#demo-status', `Run a sample ${data.sampleNoun} to follow the workflow.`);
     $('.run-demo').disabled = false;
   };
 
@@ -335,6 +336,7 @@
     $('.motion-toggle').setAttribute('aria-pressed', String(motionPaused));
     $('.motion-toggle').textContent = motionPaused ? 'Enable animation' : 'Pause animation';
     updateThread();
+    if (motionPaused && !heroFinished) finishHero();
   };
   $('.motion-toggle').addEventListener('click', () => {
     motionPaused = !motionPaused;
@@ -344,6 +346,58 @@
     motionPaused = event.matches;
     applyMotion();
   });
+
+  const heroPath = $('.hero-thread-line');
+  const heroNeedle = $('.hero-travel-needle');
+  const heroCanvas = $('.hero-canvas');
+  heroCanvas.classList.add('stitch-pending');
+  let heroFrame = 0;
+  let heroStarted = 0;
+  let heroFinished = false;
+  const heroLength = heroPath.getTotalLength();
+  heroPath.style.strokeDasharray = String(heroLength);
+  const finishHero = () => {
+    cancelAnimationFrame(heroFrame);
+    heroFinished = true;
+    heroPath.style.strokeDashoffset = '0';
+    heroNeedle.style.opacity = '0';
+    heroCanvas.classList.add('stitch-complete');
+    heroCanvas.classList.remove('stitch-pending');
+    document.documentElement.classList.add('intro-complete');
+  };
+  const animateHero = now => {
+    if (motionPaused) { finishHero(); return; }
+    if (!heroStarted) heroStarted = now;
+    const p = Math.min(1, Math.max(0, (now - heroStarted - 1100) / 2600));
+    heroPath.style.strokeDashoffset = String(heroLength - Math.max(0, heroLength * p - 75));
+    const point = heroPath.getPointAtLength(heroLength * p);
+    const next = heroPath.getPointAtLength(Math.min(heroLength, heroLength * p + 2));
+    const angle = Math.atan2(next.y - point.y, next.x - point.x) * 180 / Math.PI;
+    heroNeedle.setAttribute('transform', `translate(${point.x} ${point.y}) rotate(${angle})`);
+    heroNeedle.style.opacity = p > 0 && p < 1 ? '1' : '0';
+    heroCanvas.style.setProperty('--stitch-progress', p);
+    if (p > .05) document.documentElement.classList.add('intro-complete');
+    if (p > .55) heroCanvas.classList.add('app-stitching');
+    if (p === 1) { finishHero(); return; }
+    heroFrame = requestAnimationFrame(animateHero);
+  };
+  if (motionPaused) finishHero();
+  else heroFrame = requestAnimationFrame(animateHero);
+  $$('.dashboard-table-wrap tbody tr').forEach(row => [...row.children].forEach((cell, index) => cell.dataset.label = ['Reference', 'Customer', 'Status', 'Amount'][index]));
+  const revealTargets = $$('.step-copy,.story-visual,.case-panel,.integration-tile,.why-grid article');
+  if ('IntersectionObserver' in window) {
+    const ambient = new IntersectionObserver(entries => entries.forEach(entry => {
+      entry.target.classList.toggle('outside-viewport', !entry.isIntersecting);
+    }), { rootMargin: '120px' });
+    $$('.hero,.stitch-story,.closing').forEach(section => ambient.observe(section));
+  }
+  if ('IntersectionObserver' in window && !motionPaused) {
+    const reveal = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add('revealed'); reveal.unobserve(entry.target); }
+    }), { threshold: .12 });
+    revealTargets.forEach((target, index) => { target.classList.add('reveal-ready'); target.style.setProperty('--reveal-delay', `${Math.min(index % 3, 2) * 70}ms`); reveal.observe(target); });
+  }
+
   text('#year', new Date().getFullYear());
   if ('IntersectionObserver' in window && !motionPaused) {
     const dashboard = $('.dashboard-app');
