@@ -27,12 +27,49 @@
     for(let i=0;i<4;i++){if(run!==token)return;$('#flow-'+i).classList.add('active');$('#order-status').textContent=messages[i];if(!paused)await new Promise(r=>setTimeout(r,650));}
     if(run!==token)return;const n=counts[current];n.count++;n.revenue+=c.amount;n.customers++;$('#count').textContent=n.count;$('#revenue').textContent=format(n.revenue);$('#customers').textContent=n.customers;rows([['Just now · You',c.item,'Confirmed'],...c.rows.slice(0,2)]);$('#order-list').firstElementChild.classList.add('new');$('#order-status').textContent='Done — your sample '+(current==='service'?'booking':'order')+' is in the dashboard.';$('#sample-order').disabled=false;running=false;
   });
-  const grid=$('#stack-grid'),thread=$('#thread'),guide=$('#thread-guide'),needle=$('#needle');let length=0,progress=0,raf=0;
-  function drawPath(){const box=grid.getBoundingClientRect();const cards=$$('.tool').map(el=>{const r=el.getBoundingClientRect();return{x:r.left-box.left,y:r.top-box.top,w:r.width,h:r.height};});const mobile=window.innerWidth<=720;const columns=mobile?2:3;const order=[];for(let row=0;row<cards.length/columns;row++){const group=cards.slice(row*columns,(row+1)*columns);if(row%2)group.reverse();order.push(...group);}let d='';order.forEach((c,i)=>{const x=c.x+c.w/2,y=c.y-7;if(!i)d=`M ${x} ${y-16} L ${x} ${y}`;else{const prev=order[i-1],px=prev.x+prev.w/2,py=prev.y-7;if(Math.abs(py-y)<5)d+=` C ${px} ${y-10} ${x} ${y-10} ${x} ${y}`;else{const edge=(i/columns)%2===1?box.width+7:-7;d+=` C ${edge} ${py} ${edge} ${y} ${x} ${y}`;}}});thread.setAttribute('d',d);guide.setAttribute('d',d);length=thread.getTotalLength();thread.style.strokeDasharray=String(length);paint(progress);}
-  function paint(p){progress=p;thread.style.strokeDashoffset=String(length*(1-p));const at=thread.getPointAtLength(length*p),next=thread.getPointAtLength(Math.min(length,length*p+1)),prev=thread.getPointAtLength(Math.max(0,length*p-1));const angle=Math.atan2(next.y-prev.y,next.x-prev.x)*180/Math.PI;needle.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${angle})`);needle.style.opacity=p>0&&p<1?'1':'0';const order=window.innerWidth<=720?[0,1,3,2,4,5]:[0,1,2,5,4,3];$$('.tool').forEach((el,i)=>el.classList.toggle('stitched',p>=(order.indexOf(i)+.3)/6));}
-  function updateThread(){raf=0;const rect=grid.getBoundingClientRect();const p=paused?1:Math.max(0,Math.min(1,(innerHeight*.88-rect.top)/(rect.height+innerHeight*.17)));paint(p);}
-  function requestUpdate(){if(!raf)raf=requestAnimationFrame(updateThread);}
-  window.addEventListener('scroll',requestUpdate,{passive:true});window.addEventListener('resize',()=>{drawPath();requestUpdate();});
+  const grid=$('#stack-grid'),thread=$('#thread'),guide=$('#thread-guide'),needle=$('#needle');
+  let length=0,progress=0,targetProgress=0,raf=0,lastStitchTime=0,toolStops=[],productVisible=false,celebrated=false;
+  function celebrate(){if(progress<.999||!productVisible||celebrated)return;celebrated=true;$('.outputs').classList.add('product-complete');}
+  if('IntersectionObserver' in window)new IntersectionObserver(entries=>{productVisible=entries[0].isIntersecting;celebrate();},{threshold:.25}).observe($('.outputs'));
+  function drawPath(){
+    const box=grid.getBoundingClientRect(),columns=window.innerWidth<=720?2:3;
+    const cards=$$('.tool').map((el,index)=>{const r=el.getBoundingClientRect();return{index,x:r.left-box.left,y:r.top-box.top,w:r.width,h:r.height};});
+    const order=[];for(let row=0;row<cards.length/columns;row++){const group=cards.slice(row*columns,(row+1)*columns);if(row%2)group.reverse();order.push(...group);}
+    let d='';toolStops=[];
+    order.forEach((c,i)=>{
+      const x=c.x+c.w*.5,y=c.y+3;
+      if(!i)d=`M ${x-30} ${y-22} C ${x-15} ${y-22} ${x-12} ${y-5} ${x-8} ${y}`;
+      else {const prev=order[i-1],px=prev.x+prev.w*.5,py=prev.y+3;
+        if(Math.abs(py-y)<5)d+=` C ${px+35} ${py-25} ${x-35} ${y-25} ${x-8} ${y}`;
+        else {const edge=i/columns%2===1?box.width+8:-8;d+=` C ${edge} ${py-20} ${edge} ${y-24} ${x-8} ${y}`;}
+      }
+      // A small loop dips through each card edge before moving to the next tool.
+      d+=` C ${x+7} ${y+14} ${x+15} ${y-10} ${x} ${y-11} C ${x-12} ${y-12} ${x-9} ${y+8} ${x+9} ${y+2}`;
+      thread.setAttribute('d',d);toolStops.push({index:c.index,distance:thread.getTotalLength()});
+    });
+    guide.setAttribute('d',d);length=thread.getTotalLength();thread.style.strokeDasharray=String(length);paint(progress);
+  }
+  function paint(p){
+    progress=p;thread.style.strokeDashoffset=String(length*(1-p));
+    const distance=length*p,at=thread.getPointAtLength(distance),next=thread.getPointAtLength(Math.min(length,distance+1)),prev=thread.getPointAtLength(Math.max(0,distance-1));
+    const angle=Math.atan2(next.y-prev.y,next.x-prev.x)*180/Math.PI;
+    needle.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${angle})`);needle.style.opacity=p>0&&p<1?'1':'0';
+    toolStops.forEach(stop=>$$('.tool')[stop.index].classList.toggle('stitched',distance>=stop.distance-2));
+    if(p<.15){celebrated=false;$('.outputs').classList.remove('product-complete');}celebrate();
+  }
+  function updateThread(){
+    const rect=grid.getBoundingClientRect();targetProgress=paused?1:Math.max(0,Math.min(1,(innerHeight*.88-rect.top)/(rect.height+innerHeight*.17)));
+    if(paused){if(raf)cancelAnimationFrame(raf);raf=0;paint(1);return;}requestUpdate();
+  }
+  function animateStitch(now){
+    raf=0;const dt=Math.min(lastStitchTime?(now-lastStitchTime)/1000:1/60,.04);lastStitchTime=now;
+    const diff=targetProgress-progress;
+    const step=Math.sign(diff)*Math.min(Math.abs(diff)*(1-Math.exp(-dt*7)),dt*.24);
+    paint(Math.abs(diff)<.0004?targetProgress:progress+step);
+    if(Math.abs(targetProgress-progress)>.0001)raf=requestAnimationFrame(animateStitch);else lastStitchTime=0;
+  }
+  function requestUpdate(){if(!raf)raf=requestAnimationFrame(animateStitch);}
+  window.addEventListener('scroll',updateThread,{passive:true});window.addEventListener('resize',()=>{drawPath();updateThread();});
   function setMotion(value){paused=value;document.documentElement.classList.toggle('motion-paused',value);$('#motion-toggle').setAttribute('aria-pressed',String(value));$('#motion-toggle').textContent=value?'Resume motion':'Pause motion';updateThread();}
   $('#motion-toggle').addEventListener('click',()=>setMotion(!paused));preference.addEventListener('change',e=>setMotion(e.matches));
   // Original canvas effect inspired by Antigravity's orbiting particle field.
@@ -51,5 +88,5 @@
   document.addEventListener('visibilitychange',syncField);window.addEventListener('resize',sizeField);
   $('#motion-toggle').addEventListener('click',syncField);preference.addEventListener('change',syncField);
   sizeField();syncField();
-  choose('kitchen');setMotion(paused);if('ResizeObserver'in window)new ResizeObserver(()=>{drawPath();requestUpdate();}).observe(grid);
+  choose('kitchen');setMotion(paused);if('ResizeObserver'in window)new ResizeObserver(()=>{drawPath();updateThread();}).observe(grid);
 })();
