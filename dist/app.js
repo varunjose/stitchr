@@ -1,416 +1,55 @@
 (() => {
   'use strict';
-
-  const $ = (selector, root = document) => root.querySelector(selector);
-  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let motionPaused = motionPreference.matches;
-  let activeCase = 'kitchen';
-  let running = false;
-  let runToken = 0;
-  let caseCounts = { kitchen: 0, store: 0, service: 0 };
-  const formatMoney = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
-
-  const cases = {
-    kitchen: {
-      brand: 'Bloom Kitchen', initial: 'b.', mark: '', caption: 'Good food. A smoother operation.',
-      receiptLabel: 'ORDER #1049', receiptTitle: 'Lunch rush, handled.', receiptCopy: 'Paid → Preparing → Ready for pickup',
-      title: 'From “Order up!”\nto all caught up.',
-      description: 'An order comes in. Payment clears. The kitchen gets a ticket and the customer gets an update.',
-      benefits: [
-        ['One simple ordering experience', 'A menu, checkout, and order status in one app.'],
-        ['A calmer kitchen', 'Paid orders go straight to your team’s queue.'],
-        ['The whole picture', 'See sales, active orders, and customer questions.']
-      ],
-      cta: 'Try the kitchen dashboard', greeting: 'Let’s make it a good one.', records: 'Orders',
-      metric: 'Orders today', note: '12 ready for pickup', total: 48, revenue: 1284, questions: 24,
-      recordTitle: 'Latest orders', recordColumn: 'Order', runLabel: 'Run a sample order',
-      sampleNoun: 'order', recordPrefix: '#', nextId: 1049, amount: 28, finalStatus: 'Preparing',
-      customers: ['Alex Morgan', 'Sam Taylor', 'Jordan Lee'],
-      rows: [['#1048', 'Alex Morgan', 'Ready', 28], ['#1047', 'Sam Taylor', 'Preparing', 42], ['#1046', 'Jordan Lee', 'Collected', 18]],
-      steps: [['Payment confirmed', 'Stripe received $28.00'], ['Kitchen ticket created', 'Order saved in Supabase'], ['Team & customer updated', 'Slack + AI assistant']],
-      begin: 'A new lunch order is on its way. Watch each tool do its part.',
-      done: 'All stitched up. Payment confirmed, kitchen ticket created, and team and customer notified.'
-    },
-    store: {
-      brand: 'Form & Field', initial: 'f.', mark: 'form.', caption: 'Small finds. A connected storefront.',
-      receiptLabel: 'ORDER #2051', receiptTitle: 'From cart to customer.', receiptCopy: 'Checkout → Inventory → Fulfillment',
-      title: 'More orders.\nFewer moving parts.',
-      description: 'A purchase updates payments, inventory, and fulfillment. Your storefront and team stay in step.',
-      benefits: [
-        ['A smooth path to checkout', 'Products, payment, and order updates in one place.'],
-        ['A connected back office', 'New purchases become clear fulfillment tasks.'],
-        ['A view beyond the sale', 'Follow revenue, customer activity, and open orders.']
-      ],
-      cta: 'Try the store dashboard', greeting: 'Your store, in good shape.', records: 'Orders',
-      metric: 'Orders today', note: '8 ready to fulfill', total: 32, revenue: 2460, questions: 18,
-      recordTitle: 'Latest purchases', recordColumn: 'Order', runLabel: 'Run a sample purchase',
-      sampleNoun: 'purchase', recordPrefix: '#', nextId: 2051, amount: 64, finalStatus: 'Packing',
-      customers: ['Riley Chen', 'Avery Davis', 'Jamie Patel'],
-      rows: [['#2050', 'Riley Chen', 'Packing', 64], ['#2049', 'Avery Davis', 'Shipped', 92], ['#2048', 'Jamie Patel', 'Delivered', 36]],
-      steps: [['Payment confirmed', 'Stripe received $64.00'], ['Inventory updated', 'Purchase saved in Supabase'], ['Fulfillment notified', 'Slack + customer update']],
-      begin: 'A customer just checked out. Follow the purchase through your connected tools.',
-      done: 'All stitched up. Payment confirmed, inventory updated, and fulfillment and customer notified.'
-    },
-    service: {
-      brand: 'Studio North', initial: 'n.', mark: 'north.', caption: 'Great client work. Less admin.',
-      receiptLabel: 'BOOKING #3063', receiptTitle: 'A great first impression.', receiptCopy: 'Booking → Deposit → Welcome',
-      title: 'From first booking\nto a better client experience.',
-      description: 'A booking records the deposit, creates a client profile, and sends your team the brief.',
-      benefits: [
-        ['An easier welcome', 'Let clients book, pay, and find their next steps.'],
-        ['Fewer follow-up chores', 'Turn a booking into a ready-to-use client record.'],
-        ['A clear workload', 'See bookings, payments, and client questions together.']
-      ],
-      cta: 'Try the service dashboard', greeting: 'Make room for your best work.', records: 'Bookings',
-      metric: 'Bookings today', note: '4 upcoming consultations', total: 12, revenue: 1800, questions: 9,
-      recordTitle: 'Latest bookings', recordColumn: 'Booking', runLabel: 'Run a sample booking',
-      sampleNoun: 'booking', recordPrefix: '#', nextId: 3063, amount: 150, finalStatus: 'Confirmed',
-      customers: ['Casey Wilson', 'Drew Parker', 'Taylor Kim'],
-      rows: [['#3062', 'Casey Wilson', 'Confirmed', 150], ['#3061', 'Drew Parker', 'Upcoming', 150], ['#3060', 'Taylor Kim', 'Completed', 200]],
-      steps: [['Deposit confirmed', 'Stripe received $150.00'], ['Client record created', 'Booking saved in Supabase'], ['Welcome sent', 'Team brief + client next steps']],
-      begin: 'A client just booked a consultation. Follow the details from payment to welcome.',
-      done: 'All stitched up. Deposit confirmed, client record created, and welcome and team brief sent.'
-    }
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const examples = {
+    kitchen: {idea:'“I want to sell fresh meals online and manage my kitchen in one place.”', needs:['Ordering','Payments','Customer data','Notifications'],brand:'Bloom Kitchen',customer:'bloom kitchen.',name:'The everyday bowl',description:'Roasted greens, grains & a little goodness.',badge:'Fresh. Local. Made for you.',category:'TODAY’S SPECIAL',detail:'Ready in 20 min',amount:28,count:48,revenue:1284,customers:36,action:'Place sample order',unit:'Orders',activity:'Recent orders',caption:'Browse. Order. Pay. Track.',item:'Everyday bowl',rows:[['#1048 · Maya','Everyday bowl','Preparing'],['#1047 · James','Garden bowl','Ready'],['#1046 · Alex','Lunch bundle','Delivered']]},
+    store: {idea:'“I want an online store with checkout, customer records, and order tracking.”',needs:['Product catalog','Checkout','Customers','Order tracking'],brand:'Form & Field',customer:'form & field.',name:'The everyday tote',description:'Considered essentials. Made to go with you.',badge:'Less, but better.',category:'THE DAILY COLLECTION',detail:'Ships in 2 days',amount:64,count:32,revenue:2460,customers:27,action:'Buy sample item',unit:'Orders',activity:'Recent orders',caption:'Discover. Buy. Pay. Track.',item:'Everyday tote',rows:[['#2032 · Maya','Everyday tote','Packing'],['#2031 · James','Canvas bag','Shipped'],['#2030 · Alex','Everyday tote','Delivered']]},
+    service: {idea:'“I want clients to book my studio, pay online, and receive automatic reminders.”',needs:['Booking','Payments','Client records','Reminders'],brand:'Studio North',customer:'studio north.',name:'Your next great idea',description:'A focused creative session, just for you.',badge:'Make space to create.',category:'BOOK A STUDIO SESSION',detail:'60-minute session',amount:150,count:12,revenue:1800,customers:10,action:'Book sample session',unit:'Bookings',activity:'Recent bookings',caption:'Explore. Book. Pay. Get reminders.',item:'Creative session',rows:[['#3012 · Maya','Creative session','Confirmed'],['#3011 · James','Brand session','Confirmed'],['#3010 · Alex','Consultation','Completed']]}
   };
-
-  // Navigation remains usable without JavaScript; this only controls the mobile menu.
-  const menu = $('.menu-toggle');
-  const nav = $('#main-nav');
-  const closeMenu = () => {
-    nav.classList.remove('is-open');
-    menu.setAttribute('aria-expanded', 'false');
-    menu.setAttribute('aria-label', 'Open menu');
-  };
-  menu.addEventListener('click', () => {
-    const opening = menu.getAttribute('aria-expanded') !== 'true';
-    nav.classList.toggle('is-open', opening);
-    menu.setAttribute('aria-expanded', String(opening));
-    menu.setAttribute('aria-label', opening ? 'Close menu' : 'Open menu');
-  });
-  $$('a', nav).forEach(link => link.addEventListener('click', closeMenu));
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') {
-      closeMenu();
-      menu.focus();
-    }
-  });
-  document.addEventListener('click', event => {
-    if (!$('.site-header').contains(event.target)) closeMenu();
-  });
-
-  const text = (selector, value) => { $(selector).textContent = value; };
-  const create = (tag, className, value) => {
-    const element = document.createElement(tag);
-    if (className) element.className = className;
-    if (value !== undefined) element.textContent = value;
-    return element;
-  };
-
-  const buildRow = ([id, customer, status, amount], isNew = false) => {
-    const row = create('tr', isNew ? 'new-record' : '');
-    row.append(create('td', '', id), create('td', '', customer));
-    const statusCell = create('td');
-    const waiting = ['Preparing', 'Packing', 'Upcoming', 'Processing'].includes(status);
-    statusCell.append(create('span', `table-status ${waiting ? 'preparing' : 'ready'}`, status));
-    row.append(statusCell, create('td', '', `$${amount.toFixed(2)}`));
-    [...row.children].forEach((cell, index) => cell.dataset.label = ['Reference', 'Customer', 'Status', 'Amount'][index]);
-    return row;
-  };
-
-  const renderSteps = (data, completed = 3, active = -1) => {
-    const list = $('#activity-list');
-    list.replaceChildren(...data.steps.map(([title, detail], index) => {
-      const item = create('li', index === active ? 'active' : index >= completed ? 'pending' : '');
-      item.append(create('span', 'activity-check', index < completed ? '✓' : index === active ? '·' : String(index + 1)));
-      const content = create('div');
-      content.append(create('b', '', title), create('span', '', detail));
-      item.append(content);
-      return item;
-    }));
-  };
-
-  const renderDashboard = () => {
-    const data = cases[activeCase];
-    const count = caseCounts[activeCase];
-    text('#dashboard-brand', data.brand);
-    text('#dashboard-brand-initial', data.initial);
-    text('#dashboard-greeting', data.greeting);
-    text('#sidebar-records', data.records);
-    text('#sidebar-count', data.total + count);
-    text('#metric-label-one', data.metric);
-    text('#metric-note-one', data.note);
-    text('#metric-orders', data.total + count);
-    text('#metric-revenue', formatMoney(data.revenue + count * data.amount));
-    text('#metric-questions', data.questions);
-    text('#records-title', data.recordTitle);
-    text('#record-col', data.recordColumn);
-    text('#run-demo-label', data.runLabel);
-    const newRows = Array.from({ length: Math.min(count, 3) }, (_, index) => [
-      data.recordPrefix + (data.nextId + count - index - 1),
-      data.customers[(count - index - 1) % data.customers.length], data.finalStatus, data.amount
-    ]);
-    $('#records-body').replaceChildren(...[...newRows, ...data.rows].slice(0, 3).map(row => buildRow(row)));
-    renderSteps(data);
-    text('#demo-status', `Run a sample ${data.sampleNoun} to follow the workflow.`);
-    $('.run-demo').disabled = false;
-  };
-
-  const selectCase = key => {
-    if (!Object.hasOwn(cases, key)) return;
-    runToken += 1;
-    running = false;
-    activeCase = key;
-    const data = cases[key];
-    $$('[data-case]').forEach(tab => {
-      const selected = tab.dataset.case === key;
-      tab.setAttribute('aria-selected', String(selected));
-      tab.tabIndex = selected ? 0 : -1;
-    });
-    $('#case-panel').setAttribute('aria-labelledby', `tab-${key}`);
-    text('#case-brand', data.brand);
-    text('#case-scene-caption', data.caption);
-    text('#scene-receipt-label', data.receiptLabel);
-    text('#scene-receipt-title', data.receiptTitle);
-    text('#scene-receipt-copy', data.receiptCopy);
-    $('#case-title').replaceChildren(...data.title.split('\n').flatMap((line, index) => index ? [document.createElement('br'), document.createTextNode(line)] : [document.createTextNode(line)]));
-    text('#case-description', data.description);
-    $('#case-benefits').replaceChildren(...data.benefits.map(([title, detail], index) => {
-      const row = create('div');
-      row.append(create('span', '', `0${index + 1}`));
-      const paragraph = create('p');
-      paragraph.append(create('b', '', title), document.createTextNode(detail));
-      row.append(paragraph);
-      return row;
-    }));
-    $('#case-demo-link').replaceChildren(document.createTextNode(data.cta + ' '), create('span', '', '↗'));
-    $('#case-demo-link span').setAttribute('aria-hidden', 'true');
-    $('.case-scene').classList.toggle('alternate-scene', key !== 'kitchen');
-    $('.case-scene').dataset.sceneMark = data.mark;
-    $('#case-image').alt = key === 'kitchen' ? 'A cook preparing a fresh lunch bowl at a bright café counter' : '';
-    $('#case-image').hidden = key !== 'kitchen';
-    renderDashboard();
-  };
-
-  const tabs = $$('[data-case]');
-  tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => selectCase(tab.dataset.case));
-    tab.addEventListener('keydown', event => {
-      let next;
-      if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
-      if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
-      if (event.key === 'Home') next = 0;
-      if (event.key === 'End') next = tabs.length - 1;
-      if (next !== undefined) {
-        event.preventDefault();
-        selectCase(tabs[next].dataset.case);
-        tabs[next].focus();
-      }
-    });
-  });
-
-  const delay = duration => new Promise(resolve => window.setTimeout(resolve, motionPaused ? 90 : duration));
-  $('.run-demo').addEventListener('click', async () => {
-    if (running) return;
-    running = true;
-    const token = ++runToken;
-    const key = activeCase;
-    const data = cases[key];
-    const count = caseCounts[key];
-    const button = $('.run-demo');
-    button.disabled = true;
-    text('#run-demo-label', 'Stitching it together…');
-    text('#demo-status', data.begin);
-    renderSteps(data, 0, 0);
-    await delay(850);
-    if (token !== runToken) return;
-    text('#metric-revenue', formatMoney(data.revenue + (count + 1) * data.amount));
-    text('#demo-status', `${data.steps[0][0]}. Next, the details are passed to your database.`);
-    renderSteps(data, 1, 1);
-    await delay(850);
-    if (token !== runToken) return;
-    const row = buildRow([data.recordPrefix + (data.nextId + count), data.customers[count % data.customers.length], data.finalStatus, data.amount], true);
-    $('#records-body').prepend(row);
-    while ($('#records-body').children.length > 3) $('#records-body').lastElementChild.remove();
-    text('#metric-orders', data.total + count + 1);
-    text('#sidebar-count', data.total + count + 1);
-    text('#demo-status', `${data.steps[1][0]}. Now your team and customer get the update.`);
-    renderSteps(data, 2, 2);
-    await delay(850);
-    if (token !== runToken) return;
-    caseCounts[key] += 1;
-    renderSteps(data, 3);
-    text('#demo-status', data.done);
-    text('#run-demo-label', `Run another ${data.sampleNoun}`);
-    button.disabled = false;
-    running = false;
-  });
-
-  // One geometric thread follows the story. Only the stroke and needle change per frame.
-  const runway = $('.story-runway');
-  const svg = $('.story-svg');
-  const guide = $('.story-thread-guide');
-  const thread = $('.story-thread-active');
-  const needle = $('.scroll-needle');
-  const storySteps = $$('[data-stitch]');
-  let pathLength = 0;
-  let storyTop = 0;
-  let storyHeight = 1;
-  let thresholds = [];
-  let scrollFrame = 0;
-  let resizeFrame = 0;
-
-  const updateThread = () => {
-    scrollFrame = 0;
-    if (!pathLength) return;
-    const progress = Math.min(1, Math.max(0, (window.scrollY + window.innerHeight * .7 - storyTop) / Math.max(1, storyHeight - 140)));
-    const drawn = motionPaused ? 1 : progress;
-    thread.style.strokeDashoffset = String(pathLength * (1 - drawn));
-    if (!motionPaused) {
-      const distance = pathLength * drawn;
-      const point = thread.getPointAtLength(distance);
-      const ahead = thread.getPointAtLength(Math.min(pathLength, distance + 3));
-      const behind = thread.getPointAtLength(Math.max(0, distance - 3));
-      const angle = Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180 / Math.PI;
-      needle.setAttribute('transform', `translate(${point.x} ${point.y}) rotate(${angle})`);
-      needle.style.opacity = progress <= 0 || progress >= 1 ? '0' : '1';
-    }
-    storySteps.forEach((step, index) => step.classList.toggle('is-stitched', motionPaused || progress >= thresholds[index]));
-  };
-  const scheduleThread = () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(updateThread); };
-
-  const measureThread = () => {
-    resizeFrame = 0;
-    const rect = runway.getBoundingClientRect();
-    const width = rect.width;
-    storyHeight = rect.height;
-    storyTop = rect.top + window.scrollY;
-    svg.setAttribute('viewBox', `0 0 ${width} ${storyHeight}`);
-    thresholds = storySteps.map(step => (step.offsetTop + Math.min(step.offsetHeight * .45, 230)) / Math.max(1, storyHeight - 140));
-    const mobile = width <= 720;
-    let d;
-    if (mobile) {
-      const edge = width < 390 ? 15 : 21;
-      d = `M ${width / 2} 0 C ${width / 2} 28, ${edge} 0, ${edge} 56`;
-      for (let i = 0; i < 3; i++) {
-        const step = storySteps[i];
-        const y = step.offsetTop + step.offsetHeight * .52;
-        d += ` C ${edge} ${y - 90}, ${edge + 24} ${y - 55}, ${edge} ${y} S ${edge - 6} ${y + 70}, ${edge} ${y + 100}`;
-      }
-      const last = storySteps[3];
-      const end = last.offsetTop + 85;
-      d += ` C ${edge} ${end - 60}, ${width / 2} ${end - 95}, ${width / 2} ${end}`;
-    } else {
-      const panelRects = $$('.story-visual').map(panel => panel.getBoundingClientRect());
-      const positions = panelRects.map((panel, index) => ({ x: index === 1 ? panel.left - rect.left - 23 : panel.right - rect.left + 23, y: panel.top - rect.top + panel.height * .52 }));
-      d = `M ${width * .52} 0`;
-      let previous = { x: width * .52, y: 0 };
-      positions.forEach((point, index) => {
-        const direction = index === 1 ? -1 : 1;
-        const outer = Math.min(width - 12, Math.max(12, point.x + direction * 46));
-        const mid = (previous.y + point.y) / 2;
-        d += ` C ${previous.x} ${mid}, ${outer} ${mid - 75}, ${point.x} ${point.y - 30}`;
-        d += ` C ${point.x - direction * 27} ${point.y + 5}, ${outer} ${point.y + 57}, ${point.x} ${point.y + 88}`;
-        previous = { x: point.x, y: point.y + 88 };
-      });
-      const last = storySteps[3];
-      const end = last.offsetTop + 95;
-      d += ` C ${previous.x} ${end - 90}, ${width / 2} ${end - 150}, ${width / 2} ${end}`;
-    }
-    guide.setAttribute('d', d);
-    thread.setAttribute('d', d);
-    pathLength = thread.getTotalLength();
-    thread.style.strokeDasharray = String(pathLength);
-    updateThread();
-  };
-  const scheduleMeasure = () => { if (!resizeFrame) resizeFrame = requestAnimationFrame(measureThread); };
-  window.addEventListener('scroll', scheduleThread, { passive: true });
-  window.addEventListener('resize', () => {
-    scheduleMeasure();
-    if (window.innerWidth > 720) closeMenu();
-  }, { passive: true });
-  if ('ResizeObserver' in window) new ResizeObserver(scheduleMeasure).observe(runway);
-
-  const applyMotion = () => {
-    document.documentElement.classList.toggle('motion-paused', motionPaused);
-    $('.motion-toggle').setAttribute('aria-pressed', String(motionPaused));
-    $('.motion-toggle').textContent = motionPaused ? 'Enable animation' : 'Pause animation';
-    updateThread();
-    if (motionPaused && !heroFinished) finishHero();
-  };
-  $('.motion-toggle').addEventListener('click', () => {
-    motionPaused = !motionPaused;
-    applyMotion();
-  });
-  motionPreference.addEventListener('change', event => {
-    motionPaused = event.matches;
-    applyMotion();
-  });
-
-  const heroPath = $('.hero-thread-line');
-  const heroNeedle = $('.hero-travel-needle');
-  const heroCanvas = $('.hero-canvas');
-  heroCanvas.classList.add('stitch-pending');
-  let heroFrame = 0;
-  let heroStarted = 0;
-  let heroFinished = false;
-  const heroLength = heroPath.getTotalLength();
-  heroPath.style.strokeDasharray = String(heroLength);
-  const finishHero = () => {
-    cancelAnimationFrame(heroFrame);
-    heroFinished = true;
-    heroPath.style.strokeDashoffset = '0';
-    heroNeedle.style.opacity = '0';
-    heroCanvas.classList.add('stitch-complete');
-    heroCanvas.classList.remove('stitch-pending');
-    document.documentElement.classList.add('intro-complete');
-  };
-  const animateHero = now => {
-    if (motionPaused) { finishHero(); return; }
-    if (!heroStarted) heroStarted = now;
-    const p = Math.min(1, Math.max(0, (now - heroStarted - 1100) / 2600));
-    heroPath.style.strokeDashoffset = String(heroLength - Math.max(0, heroLength * p - 75));
-    const point = heroPath.getPointAtLength(heroLength * p);
-    const next = heroPath.getPointAtLength(Math.min(heroLength, heroLength * p + 2));
-    const angle = Math.atan2(next.y - point.y, next.x - point.x) * 180 / Math.PI;
-    heroNeedle.setAttribute('transform', `translate(${point.x} ${point.y}) rotate(${angle})`);
-    heroNeedle.style.opacity = p > 0 && p < 1 ? '1' : '0';
-    heroCanvas.style.setProperty('--stitch-progress', p);
-    if (p > .05) document.documentElement.classList.add('intro-complete');
-    if (p > .55) heroCanvas.classList.add('app-stitching');
-    if (p === 1) { finishHero(); return; }
-    heroFrame = requestAnimationFrame(animateHero);
-  };
-  if (motionPaused) finishHero();
-  else heroFrame = requestAnimationFrame(animateHero);
-  $$('.dashboard-table-wrap tbody tr').forEach(row => [...row.children].forEach((cell, index) => cell.dataset.label = ['Reference', 'Customer', 'Status', 'Amount'][index]));
-  const revealTargets = $$('.step-copy,.story-visual,.case-panel,.integration-tile,.why-grid article');
-  if ('IntersectionObserver' in window) {
-    const ambient = new IntersectionObserver(entries => entries.forEach(entry => {
-      entry.target.classList.toggle('outside-viewport', !entry.isIntersecting);
-    }), { rootMargin: '120px' });
-    $$('.hero,.stitch-story,.closing').forEach(section => ambient.observe(section));
+  let current='kitchen', token=0, running=false;
+  const counts={};
+  const format=(n)=>'$'+n.toLocaleString('en-US');
+  const preference=matchMedia('(prefers-reduced-motion: reduce)');
+  let paused=preference.matches;
+  function rows(items){$('#order-list').replaceChildren(...items.map((data)=>{const row=document.createElement('div');row.className='order-row'; data.forEach((value,i)=>{const el=document.createElement(i===2?'b':'span');el.textContent=value;row.append(el);});return row;}));}
+  function choose(key){token++;running=false;current=key;const c=examples[key];const n=counts[key] ||= {count:c.count,revenue:c.revenue,customers:c.customers};
+    $$('[data-case]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.case===key)));
+    const values={'#idea':c.idea,'#customer-brand':c.customer,'#dashboard-brand':c.brand,'#product-name':c.name,'#product-description':c.description,'#product-badge':c.badge,'#product-category':c.category,'#product-detail':c.detail,'#price':format(c.amount)+'.00','#count-label':c.unit,'#count':n.count,'#revenue':format(n.revenue),'#customers':n.customers,'#activity-title':c.activity};Object.entries(values).forEach(([s,v])=>$(s).textContent=v);
+    $('#needs').replaceChildren(...c.needs.map(v=>{const s=document.createElement('span');s.textContent=v;return s;}));
+    $('#product-visual').className='product-visual '+key;$('.customer .output-caption').textContent=c.caption;
+    const button=$('#sample-order');button.disabled=false;button.replaceChildren(document.createTextNode(c.action+' '),Object.assign(document.createElement('span'),{textContent:'↗'}));
+    $('#order-status').textContent='Try it. Watch the dashboard update.';$$('.workflow span').forEach(s=>s.classList.remove('active'));rows(c.rows);drawPath();updateThread();
   }
-  if ('IntersectionObserver' in window && !motionPaused) {
-    const reveal = new IntersectionObserver(entries => entries.forEach(entry => {
-      if (entry.isIntersecting) { entry.target.classList.add('revealed'); reveal.unobserve(entry.target); }
-    }), { threshold: .12 });
-    revealTargets.forEach((target, index) => { target.classList.add('reveal-ready'); target.style.setProperty('--reveal-delay', `${Math.min(index % 3, 2) * 70}ms`); reveal.observe(target); });
-  }
-
-  text('#year', new Date().getFullYear());
-  if ('IntersectionObserver' in window && !motionPaused) {
-    const dashboard = $('.dashboard-app');
-    dashboard.classList.add('will-assemble');
-    const assemble = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) {
-        dashboard.classList.add('is-assembled');
-        assemble.disconnect();
-      }
-    }, { threshold: .15 });
-    assemble.observe(dashboard);
-  }
-  applyMotion();
-  measureThread();
-  window.addEventListener('load', scheduleMeasure, { once: true });
+  $$('[data-case]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.case)));
+  $('#sample-order').addEventListener('click',async()=>{if(running)return;running=true;const run=++token,c=examples[current];$('#sample-order').disabled=true;
+    const messages=['Customer action received…','Sample payment confirmed.','Customer and order data synced.','Team notified. Dashboard updated.'];
+    for(let i=0;i<4;i++){if(run!==token)return;$('#flow-'+i).classList.add('active');$('#order-status').textContent=messages[i];if(!paused)await new Promise(r=>setTimeout(r,650));}
+    if(run!==token)return;const n=counts[current];n.count++;n.revenue+=c.amount;n.customers++;$('#count').textContent=n.count;$('#revenue').textContent=format(n.revenue);$('#customers').textContent=n.customers;rows([['Just now · You',c.item,'Confirmed'],...c.rows.slice(0,2)]);$('#order-list').firstElementChild.classList.add('new');$('#order-status').textContent='Done — your sample '+(current==='service'?'booking':'order')+' is in the dashboard.';$('#sample-order').disabled=false;running=false;
+  });
+  const grid=$('#stack-grid'),thread=$('#thread'),guide=$('#thread-guide'),needle=$('#needle');let length=0,progress=0,raf=0;
+  function drawPath(){const box=grid.getBoundingClientRect();const cards=$$('.tool').map(el=>{const r=el.getBoundingClientRect();return{x:r.left-box.left,y:r.top-box.top,w:r.width,h:r.height};});const mobile=window.innerWidth<=720;const columns=mobile?2:3;const order=[];for(let row=0;row<cards.length/columns;row++){const group=cards.slice(row*columns,(row+1)*columns);if(row%2)group.reverse();order.push(...group);}let d='';order.forEach((c,i)=>{const x=c.x+c.w/2,y=c.y-7;if(!i)d=`M ${x} ${y-16} L ${x} ${y}`;else{const prev=order[i-1],px=prev.x+prev.w/2,py=prev.y-7;if(Math.abs(py-y)<5)d+=` C ${px} ${y-10} ${x} ${y-10} ${x} ${y}`;else{const edge=(i/columns)%2===1?box.width+7:-7;d+=` C ${edge} ${py} ${edge} ${y} ${x} ${y}`;}}});thread.setAttribute('d',d);guide.setAttribute('d',d);length=thread.getTotalLength();thread.style.strokeDasharray=String(length);paint(progress);}
+  function paint(p){progress=p;thread.style.strokeDashoffset=String(length*(1-p));const at=thread.getPointAtLength(length*p),next=thread.getPointAtLength(Math.min(length,length*p+1)),prev=thread.getPointAtLength(Math.max(0,length*p-1));const angle=Math.atan2(next.y-prev.y,next.x-prev.x)*180/Math.PI;needle.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${angle})`);needle.style.opacity=p>0&&p<1?'1':'0';const order=window.innerWidth<=720?[0,1,3,2,4,5]:[0,1,2,5,4,3];$$('.tool').forEach((el,i)=>el.classList.toggle('stitched',p>=(order.indexOf(i)+.3)/6));}
+  function updateThread(){raf=0;const rect=grid.getBoundingClientRect();const p=paused?1:Math.max(0,Math.min(1,(innerHeight*.88-rect.top)/(rect.height+innerHeight*.17)));paint(p);}
+  function requestUpdate(){if(!raf)raf=requestAnimationFrame(updateThread);}
+  window.addEventListener('scroll',requestUpdate,{passive:true});window.addEventListener('resize',()=>{drawPath();requestUpdate();});
+  function setMotion(value){paused=value;document.documentElement.classList.toggle('motion-paused',value);$('#motion-toggle').setAttribute('aria-pressed',String(value));$('#motion-toggle').textContent=value?'Resume motion':'Pause motion';updateThread();}
+  $('#motion-toggle').addEventListener('click',()=>setMotion(!paused));preference.addEventListener('change',e=>setMotion(e.matches));
+  // Original canvas effect inspired by Antigravity's orbiting particle field.
+  const canvas=$('#particle-field'),ctx=canvas.getContext('2d');
+  let fieldFrame=0,visible=true,w=0,h=0,last=0,time=0;
+  const pointer={x:0,y:0},target={x:0,y:0};
+  const particles=Array.from({length:window.innerWidth<721?360:850},(_,i)=>({angle:i*2.399963,radius:.72+Math.random()*.5,depth:Math.random(),speed:.15+Math.random()*.3,size:.5+Math.random()*.8}));
+  function sizeField(){const r=canvas.getBoundingClientRect();w=r.width;h=r.height;const dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);renderField();}
+  function renderField(){ctx.clearRect(0,0,w,h);pointer.x+=(target.x-pointer.x)*.035;pointer.y+=(target.y-pointer.y)*.035;
+    for(const p of particles){const a=p.angle+time*p.speed*.11;const wave=Math.sin(a*3+time*.25)*.035;const rx=w*.43*(p.radius+wave),ry=h*.43*(p.radius+wave);const x=w/2+Math.cos(a)*rx+pointer.x*p.depth*12;const y=h*.49+Math.sin(a)*ry+Math.sin(a*2+time*.2)*h*.055+pointer.y*p.depth*9;const fade=Math.min(1,Math.abs(x-w/2)/(w*.27)+Math.abs(y-h*.47)/(h*.4));ctx.globalAlpha=(.16+p.depth*.38)*fade;ctx.fillStyle=p.depth>.68?'#88b74e':'#7b8574';ctx.beginPath();ctx.arc(x,y,p.size,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+  function tickField(stamp){fieldFrame=0;if(paused||!visible||document.hidden)return;if(stamp-last>32){time+=Math.min((stamp-last)/1000,.05);last=stamp;renderField();}fieldFrame=requestAnimationFrame(tickField);}
+  function syncField(){if(fieldFrame)cancelAnimationFrame(fieldFrame);fieldFrame=0;if(!paused&&visible&&!document.hidden){last=performance.now();fieldFrame=requestAnimationFrame(tickField);}else renderField();}
+  $('.hero').addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const r=canvas.getBoundingClientRect();target.x=(e.clientX-r.left)/r.width*2-1;target.y=(e.clientY-r.top)/r.height*2-1;},{passive:true});
+  $('.hero').addEventListener('pointerleave',()=>{target.x=0;target.y=0;});
+  if('IntersectionObserver'in window)new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;syncField();}).observe(canvas);
+  document.addEventListener('visibilitychange',syncField);window.addEventListener('resize',sizeField);
+  $('#motion-toggle').addEventListener('click',syncField);preference.addEventListener('change',syncField);
+  sizeField();syncField();
+  choose('kitchen');setMotion(paused);if('ResizeObserver'in window)new ResizeObserver(()=>{drawPath();requestUpdate();}).observe(grid);
 })();
