@@ -8,3 +8,5 @@ Original SVG files; colors and geometry are unchanged. Used to identify example 
 - Shopify: https://www.shopify.com/brand-assets — Shopping Bag full-color SVG.
 
 The kitchen photograph was generated for Stitchr.
+
+The original woven-thread landscape was generated for Stitchr. The navy, ivory, orange and abstract textile direction is inspired by https://withglide.com/; no Glide artwork or logos are reused.
